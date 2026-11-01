@@ -1,4 +1,3 @@
-
 name: Gerar APK 1 REAL
 
 on:
@@ -33,9 +32,41 @@ jobs:
       - name: Compilar versão Release
         run: gradle -p 1_REAL_Android assembleRelease
 
-      - name: Disponibilizar APK Release
+      - name: Instalar ferramentas Android
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "build-tools;35.0.0"
+
+      - name: Preparar chave
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/1-real.jks"
+
+      - name: Assinar APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          APK=$(find 1_REAL_Android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
+
+          "$BUILD_TOOLS/zipalign" -f -p 4 "$APK" "$RUNNER_TEMP/alinhado.apk"
+
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks "$RUNNER_TEMP/1-real.jks" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass env:KEYSTORE_PASSWORD \
+            --key-pass env:KEY_PASSWORD \
+            --out "$RUNNER_TEMP/1-REAL-assinado.apk" \
+            "$RUNNER_TEMP/alinhado.apk"
+
+          "$BUILD_TOOLS/apksigner" verify "$RUNNER_TEMP/1-REAL-assinado.apk"
+
+      - name: Disponibilizar APK assinado
         uses: actions/upload-artifact@v4
         with:
           name: 1-REAL-RELEASE
-          path: 1_REAL_Android/app/build/outputs/apk/release/*.apk
-
+          path: ${{ runner.temp }}/1-REAL-assinado.apk
