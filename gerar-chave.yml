@@ -1,0 +1,33 @@
+name: Gerar chave 1 REAL
+
+on:
+  workflow_dispatch:
+
+jobs:
+  gerar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gerar chave
+        run: |
+          keytool -genkeypair \
+            -keystore 1-real.jks \
+            -alias umreal \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass "${{ secrets.KEY_PASSWORD }}" \
+            -keypass "${{ secrets.KEY_PASSWORD }}" \
+            -dname "CN=1 REAL, OU=Games, O=1 REAL, L=Brasil, ST=SP, C=BR"
+
+      - name: Guardar chave
+        uses: actions/upload-artifact@v4
+        with:
+          name: chave-1-real
+          path: 1-real.jks
+          retention-days: 90
