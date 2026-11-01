@@ -1,4 +1,4 @@
-name: Gerar chave 1 REAL
+name: Gerar chave do 1 REAL
 
 on:
   workflow_dispatch:
@@ -6,14 +6,9 @@ on:
 jobs:
   gerar:
     runs-on: ubuntu-latest
-    steps:
-      - name: Preparar Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
 
-      - name: Gerar chave
+    steps:
+      - name: Gerar chave e converter
         run: |
           keytool -genkeypair \
             -keystore 1-real.jks \
@@ -21,13 +16,16 @@ jobs:
             -keyalg RSA \
             -keysize 2048 \
             -validity 10000 \
-            -storepass "${{ secrets.KEY_PASSWORD }}" \
-            -keypass "${{ secrets.KEY_PASSWORD }}" \
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.KEYSTORE_PASSWORD }}" \
             -dname "CN=1 REAL, OU=Games, O=1 REAL, L=Brasil, ST=SP, C=BR"
 
-      - name: Guardar chave
+          base64 -w 0 1-real.jks > chave-base64.txt
+
+      - name: Salvar arquivos
         uses: actions/upload-artifact@v4
         with:
           name: chave-1-real
-          path: 1-real.jks
-          retention-days: 90
+          path: |
+            1-real.jks
+            chave-base64.txt
